@@ -12,6 +12,7 @@
                  [clj-time "0.10.0"]
                  [environ "1.0.0"]
                  [commons-daemon/commons-daemon "1.0.15"]
+                 [prismatic/schema "0.4.3"]
                  [org.clojure/core.match "0.3.0-alpha4"]]
   :plugins [[lein-environ "1.0.0"]]
   :main herark.main

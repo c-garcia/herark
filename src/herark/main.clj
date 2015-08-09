@@ -1,6 +1,5 @@
 (ns herark.main
-  (:require [herark.core :refer [snmp-v2c-trap-processor]]
-            [herark.smi :refer :all]
+  (:require [herark.adapters.snmp4j :refer [snmp-v2c-trap-processor]]
             [com.stuartsierra.component :as component]
             [environ.core :refer [env]]
             [taoensso.timbre :as log])
@@ -12,15 +11,9 @@
 
 (def state (atom nil))
 
-(defn process-event
-  [^CommandResponderEvent ev]
-  (try
-    (let [pdu (.getPDU ev)
-          vbs (.getVariableBindings pdu)]
-      (doseq [vb vbs]
-        (println (str (as-tagged (.getOid vb))) "=" (str (as-tagged (.getVariable vb))))))
-    (catch Exception e
-      (log/error "Exception caught" e))))
+(defn process-event!
+  [ev]
+  (log/debug "Received event" ev))
 
 (defn init [args]
   (let [proc-name (env :name "v2c-proc")
@@ -33,7 +26,7 @@
     (log/debug "port:" port)
     (log/debug "community:" community)
     (->> (component/system-map
-           :responder process-event
+           :responder process-event!
            :app (component/using
                   (snmp-v2c-trap-processor proc-name host port :community community)
                   [:responder]))

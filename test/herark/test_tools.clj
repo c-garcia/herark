@@ -4,7 +4,7 @@
             [herark.core :refer :all])
   (:import [java.net BindException]))
 
-(defn- get-candidate-port
+(defn- get-random-port
   "Generates a random sequence of integers between `min_port` (inclusive) ad `max_port`
   (exclusive).
   If no parametes are passed, assumes `min_port` to be 1025 and `max_port` 60000."
@@ -12,31 +12,21 @@
    (let [rnd_max (- max_port min_port)]
      (+ min_port (rand-int rnd_max))))
   ([]
-   (get-candidate-port 1025 60000)))
+   (get-random-port 1025 60000)))
 
-(defn make-testing-processor
-  "Creates a testing processor for SNMP `version` and bounds the processing function `f`  to it.
-  `f` is a function receiving a org.snmp4j.CommandResponderEvent. At the moment,
-  `version` can be only :v2c."
-  [version f]
-  (letfn [(processor-or-nil [port]
-                            (log/debug "Trying port: " port)
-                            (try
-                              (->
-                                (component/system-map
-                                  :responder f
-                                  :processor (component/using
-                                               (snmp-v2c-trap-processor (str "processor-at-" port) "localhost" port)
-                                               [:responder]))
-                                component/start)
-                              (catch BindException e
-                                (log/debug "Already bound!")
-                                nil)))]
-    (case version
-      :v2c (->>
-             (repeatedly get-candidate-port)
-             (map processor-or-nil)
-             (filter identity)
-             first)
-      nil)))
+(defn try-on-random-port
+  "Tries to invoke a function of a single parameter (the port) on a random port. If
+  the function throws BindException or nil, retries. If not, returns the result returned
+   by the function"
+  [f]
+  (letfn [(object-or-nil [p]
+                         (log/debug "Trying on port p")
+                         (try
+                           (f p)
+                           (catch BindException e
+                             (log/debug "Already bound!"))))]
+    (->> (repeatedly get-random-port)
+         (map object-or-nil)
+         (filter identity)
+         first)))
 
