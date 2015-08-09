@@ -1,5 +1,7 @@
 # herark
 
+[![Build Status](https://travis-ci.org/c-garcia/herark.svg)](https://travis-ci.org/c-garcia/herark)
+
 A Clojure library designed to receive and process SNMP traps, [Ring](https://github.com/ring-clojure/ring) style. 
 It is comprised of:
 
@@ -14,7 +16,7 @@ It is comprised of:
 
 Add the item below to your leiningen `:dependencies`
 
-    [eu.obliquo/herark "0.1.1"]
+    [eu.obliquo/herark "0.1.2-SNAPSHOT"]
     
 ## The big picture
 
