@@ -14,7 +14,7 @@ It is comprised of:
 
 Add the item below to your leiningen `:dependencies`
 
-    [eu.obliquo/herark "0.1.0"]
+    [eu.obliquo/herark "0.1.1"]
     
 ## The big picture
 

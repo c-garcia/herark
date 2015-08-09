@@ -92,6 +92,7 @@
   (as-tagged [this]
     [:unsigned-int32 (.getValue this)]))
 
+; FIXME Sometimes this raises an AssertionError
 (defn- command-responder-event->trap-info
   "Turns `ev` into a map that conforms to SnmpV2CTrapInfo validator"
   [^CommandResponderEvent ev]
