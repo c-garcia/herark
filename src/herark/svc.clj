@@ -1,4 +1,4 @@
-(ns herark.main
+(ns herark.svc
   (:require [herark.adapters.snmp4j :refer [snmp-v2c-trap-processor]]
             [com.stuartsierra.component :as component]
             [environ.core :refer [env]]
@@ -6,8 +6,7 @@
   (:import [org.apache.commons.daemon Daemon DaemonContext]
            (org.snmp4j CommandResponderEvent))
   (:gen-class
-    :init init
-    :implements [Daemon]))
+    :implements [org.apache.commons.daemon.Daemon]))
 
 (def state (atom nil))
 

@@ -15,5 +15,6 @@
                  [prismatic/schema "0.4.3"]
                  [org.clojure/core.match "0.3.0-alpha4"]]
   :plugins [[lein-environ "1.0.0"]]
-  :main herark.main
-  :profiles { :dev {:env {:msg "TESTING ENV"}}})
+  :main herark.svc
+  :profiles {:dev {:env {:msg "TESTING ENV"}}
+             :uberjar {:aot :all}})
