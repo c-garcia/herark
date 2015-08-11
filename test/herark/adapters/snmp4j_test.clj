@@ -58,7 +58,7 @@
               (is (= (OID. (int-array (deref received-trap-oid 2000 []))) (OID. trap-oid-str)) "The received trap has this OID"))
             (component/stop tp)))))))
 
-(deftest snmp-v2c-trap-race-condition-prevention
+#_(deftest snmp-v2c-trap-race-condition-prevention
   (let [trap-oid-str ".1.3.6.1.6.3.1.1.5.3"]
     (testing (str "Given a trap OID:" trap-oid-str)
       (testing "and a trap handler that increases the value of an atom and a v2c trap processor"
