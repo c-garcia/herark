@@ -67,8 +67,7 @@
               tp (make-testing-processor handler)]
           (testing "and a ThreadPool of the same number of processors than cores sending a trap 10 times each"
             (let [avail-proc (. (Runtime/getRuntime) availableProcessors)
-                  ;avail-proc 3
-                  update-times 10
+                  update-times 100
                   thread-pool (Executors/newFixedThreadPool avail-proc)
                   send-notif (fn [] (doseq [_ (range update-times)]
                                       (let [pdu (make-notification-pdu ".1.3.6.1.6.3.1.1.5.3")
@@ -77,13 +76,14 @@
                                         (try
                                           (send-pdu host port "public" pdu)
                                           (catch Exception e
-                                            (log/error "Exception catch while sending PDU" e))))))]
+                                            (log/error "Exception catched while sending PDU" e))))))]
               (testing "When I execute all the threads and wait for the result"
                 (doseq [th-status (.invokeAll
                                     thread-pool
                                     (repeat avail-proc send-notif))]
-                  (.get th-status))
-                ; FIXME We need to see how to join on the threads
-                (Thread/sleep 5000)
+                  (log/debug "Joining thread: " (.get th-status)))
+                ; Without the log statement above, the test fails frequently with update-times < desired one.
+                ; Is it because the compiler removes-optimizes the call to .get so the thread-pool is shutdown
+                ; before all threads are done?
                 (.shutdown thread-pool)
                 (is (= @counter (* update-times avail-proc)) "The counter value equals times * threads")))))))))
