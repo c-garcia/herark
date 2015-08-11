@@ -92,11 +92,10 @@
   (as-tagged [this]
     [:unsigned-int32 (.getValue this)]))
 
-; FIXME Sometimes this raises an AssertionError
 (defn- command-responder-event->trap-info
   "Turns `ev` into a map that conforms to SnmpV2CTrapInfo validator"
   [^CommandResponderEvent ev]
-  {:post [(nil? (s/check hk/SnmpV2CTrapInfo %))]}
+  {:post [(not (s/check hk/SnmpV2CTrapInfo %))]}
   (let [[t [addr port]] (as-tagged (.getPeerAddress ev))
         proto (case t
                 :tcp-address :tcp

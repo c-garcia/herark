@@ -5,7 +5,8 @@
             [com.stuartsierra.component :as component]
             [herark.tools :refer :all]
             [herark.test-tools :refer :all])
-  (:import (org.snmp4j.smi OID)))
+  (:import (org.snmp4j.smi OID)
+           (java.util.concurrent Executors)))
 
 (defn make-testing-processor
   "Creates a trap processor listenting at a random port with the specified
@@ -38,7 +39,7 @@
 
 (deftest snmp-v2c-trap-equals-sent
   (let [trap-oid-str ".1.3.6.1.6.3.1.1.5.3"]
-    (testing (str "Given a trap with OID:" trap-oid-str)
+    (testing (str "Given a trap OID:" trap-oid-str)
       (testing "And a v2c trap processor"
         (let [received-trap-oid (promise)
               f (fn [e]
@@ -56,3 +57,33 @@
                   _ (send-pdu (get-in tp [:processor :host]) (get-in tp [:processor :port]) "public" pdu)]
               (is (= (OID. (int-array (deref received-trap-oid 2000 []))) (OID. trap-oid-str)) "The received trap has this OID"))
             (component/stop tp)))))))
+
+(deftest snmp-v2c-trap-race-condition-prevention
+  (let [trap-oid-str ".1.3.6.1.6.3.1.1.5.3"]
+    (testing (str "Given a trap OID:" trap-oid-str)
+      (testing "and a trap handler that increases the value of an atom and a v2c trap processor"
+        (let [counter (atom 0)
+              handler (fn [_] (swap! counter inc))
+              tp (make-testing-processor handler)]
+          (testing "and a ThreadPool of the same number of processors than cores sending a trap 10 times each"
+            (let [avail-proc (. (Runtime/getRuntime) availableProcessors)
+                  ;avail-proc 3
+                  update-times 10
+                  thread-pool (Executors/newFixedThreadPool avail-proc)
+                  send-notif (fn [] (doseq [_ (range update-times)]
+                                      (let [pdu (make-notification-pdu ".1.3.6.1.6.3.1.1.5.3")
+                                            host (get-in tp [:processor :host])
+                                            port (get-in tp [:processor :port])]
+                                        (try
+                                          (send-pdu host port "public" pdu)
+                                          (catch Exception e
+                                            (log/error "Exception catch while sending PDU" e))))))]
+              (testing "When I execute all the threads and wait for the result"
+                (doseq [th-status (.invokeAll
+                                    thread-pool
+                                    (repeat avail-proc send-notif))]
+                  (.get th-status))
+                ; FIXME We need to see how to join on the threads
+                (Thread/sleep 5000)
+                (.shutdown thread-pool)
+                (is (= @counter (* update-times avail-proc)) "The counter value equals times * threads")))))))))
