@@ -2,17 +2,19 @@
   (:require [clj-time.core :as t]
             [clj-time.coerce :as tc]
             [taoensso.timbre :as log])
-  (:import (org.snmp4j.smi UdpAddress OctetString Integer32 VariableBinding OID)
+  (:import (org.snmp4j.smi UdpAddress OctetString Integer32 VariableBinding OID TcpAddress)
            (org.snmp4j CommunityTarget PDU Snmp)
            (org.snmp4j.mp SnmpConstants)
-           (org.snmp4j.transport DefaultUdpTransportMapping)))
+           (org.snmp4j.transport DefaultUdpTransportMapping DefaultTcpTransportMapping)))
 
 (defn make-v2c-target
   "Creates a SNMP4J V2C UDP target on `host`:`port` and `community`.
   `community` can be specificed as a byte-array or String."
-  [^String host ^String port community]
+  [^String host ^String port community & {:keys [proto] :or {proto :udp}}]
   (let [^bytes community-b (if (string? community) (.getBytes ^String community) community)
-        addr (UdpAddress. host port)
+        addr (if (= :udp proto)
+               (UdpAddress. host port)
+               (TcpAddress. host port))
         tgt (doto (CommunityTarget.)
               (.setCommunity (OctetString. community-b))
               (.setVersion SnmpConstants/version2c)
@@ -52,10 +54,13 @@
 
 (defn send-pdu
   "Sends the `pdu` PDU to a V2C Manager listening on UDP `host`:`port` with `community`."
-  [host port community pdu]
+  [host port community pdu & {:keys [proto] :or {proto :udp}}]
   (log/debug "Sending pdu to: " host ":" port)
-  (let [tgt (make-v2c-target host port community)
-        transport (doto (DefaultUdpTransportMapping.))
+  (let [tgt (make-v2c-target host port community :proto proto)
+        tm (if (= :udp proto)
+             (DefaultUdpTransportMapping.)
+             (DefaultTcpTransportMapping.))
+        transport (doto tm)
         ;(.listen))
         snmp (Snmp. transport)]
     (.send snmp pdu tgt)))

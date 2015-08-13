@@ -20,7 +20,7 @@
    by the function"
   [f]
   (letfn [(object-or-nil [p]
-                         (log/debug "Trying on port p")
+                         (log/debug "Trying on port: " p)
                          (try
                            (f p)
                            (catch BindException e

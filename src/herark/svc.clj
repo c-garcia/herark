@@ -18,16 +18,14 @@
   (let [proc-name (env :name "v2c-proc")
         host (env :host "localhost")
         port-s (env :port "11162")
-        port (Integer/parseInt port-s)
-        community (env :community "public")]
+        port (Integer/parseInt port-s)]
     (log/info "Starting SNMP trap processor:" proc-name)
     (log/debug "host:" host)
     (log/debug "port:" port)
-    (log/debug "community:" community)
     (->> (component/system-map
            :responder process-event!
            :app (component/using
-                  (snmp-v2c-trap-processor proc-name host port :community community)
+                  (snmp-v2c-trap-processor proc-name host port)
                   [:responder]))
          (reset! state))
     (log/debug "system state created")))

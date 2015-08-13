@@ -11,7 +11,7 @@
 (defn make-testing-processor
   "Creates a trap processor listenting at a random port with the specified
   responder `f`."
-  [f]
+  [f & {:keys [proto] :or {proto :udp} }]
   (try-on-random-port
     (fn [p] (-> (component/system-map
                   :responder f
@@ -19,7 +19,8 @@
                                (snmp-v2c-trap-processor
                                  (str "Proc-at-" p)
                                  "localhost"
-                                 p)
+                                 p
+                                 :proto proto)
                                [:responder]))
                 component/start))))
 
@@ -58,6 +59,9 @@
               (is (= (OID. (int-array (deref received-trap-oid 2000 []))) (OID. trap-oid-str)) "The received trap has this OID"))
             (component/stop tp)))))))
 
+
+;; FIXME: The test below does not work when executed under leiningen
+;; it works as an independent test on the IDE
 #_(deftest snmp-v2c-trap-race-condition-prevention
   (let [trap-oid-str ".1.3.6.1.6.3.1.1.5.3"]
     (testing (str "Given a trap OID:" trap-oid-str)
@@ -85,5 +89,21 @@
                 ; Without the log statement above, the test fails frequently with update-times < desired one.
                 ; Is it because the compiler removes-optimizes the call to .get so the thread-pool is shutdown
                 ; before all threads are done?
+                ; Update: With the thread sleep, it works. It does not always without it despite of doing it better.
+                (Thread/sleep 5000)
                 (.shutdown thread-pool)
                 (is (= @counter (* update-times avail-proc)) "The counter value equals times * threads")))))))))
+
+(deftest snmp-v2c-tcp-trap-received
+  (testing "Given a function to be invoked when a trap is received"
+    (let [flag (promise)
+          process-trap (fn [e] (log/debug "I got hit!" e) (deliver flag true))]
+      (testing "and a v2c TCP trap processor with this function as responder"
+        (let [tp (make-testing-processor process-trap :proto :tcp)]
+          (log/debug "Created testing processor: " (get-in tp [:processor]))
+          (testing "when I send a v2c trap to this processor using TCP, "
+            (let [pdu (make-notification-pdu ".1.2.3.4")
+                  _ (send-pdu (get-in tp [:processor :host]) (get-in tp [:processor :port]) "public" pdu :proto :tcp)
+                  invoked? (deref flag 2000 false)]
+              (is invoked? "the function is invoked")))
+          (component/stop tp))))))

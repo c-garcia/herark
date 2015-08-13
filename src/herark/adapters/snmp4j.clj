@@ -8,7 +8,7 @@
            (org.snmp4j.smi Opaque SshAddress TcpAddress TimeTicks TlsAddress)
            (org.snmp4j.smi UdpAddress UnsignedInteger32)
            (org.snmp4j.security TsmSecurityParameters)
-           (org.snmp4j.transport DefaultUdpTransportMapping)
+           (org.snmp4j.transport DefaultUdpTransportMapping DefaultTcpTransportMapping)
            (org.snmp4j.util ThreadPool MultiThreadedMessageDispatcher)
            (org.snmp4j MessageDispatcherImpl Snmp CommandResponder CommandResponderEvent)
            (org.snmp4j.mp MPv2c)
@@ -121,7 +121,7 @@
      :varbinds       varbinds
      :timestamp      timestamp}))
 
-(defrecord SNMPV2CTrapProcessor [proc-name host port community nd responder snmp-entity]
+(defrecord SNMPV2CTrapProcessor [proc-name host port proto nd responder snmp-entity]
 
   component/Lifecycle
 
@@ -130,9 +130,12 @@
       (if-not snmp-entity
         (let [host (get component :host)
               port (get component :port)
+              proto (get component :proto)
               responder (get component :responder)
               nd (get component :nd)
-              tm (DefaultUdpTransportMapping. (UdpAddress. host port))
+              tm (if (= proto :udp)
+                   (DefaultUdpTransportMapping. (UdpAddress. host port))
+                   (DefaultTcpTransportMapping. (TcpAddress. host port)))
               tp (ThreadPool/create (str "SnmpDispatcher." proc-name) nd)
               md (doto
                    (MultiThreadedMessageDispatcher. tp (MessageDispatcherImpl.))
@@ -180,17 +183,17 @@
 
   Name        Desc                            Default
   ------------------------------------------------------------
-  :community  SNMP Community                  \"public\"
   :nd         Number of dispatchers           (+ cores 2)
-  :responder  (fn [CommandResponderEvent])    No default"
-  [proc-name host port & {:keys [community nd]
-                          :or   {community "public" nd (threads-suggestion)}
+  :responder  (fn [CommandResponderEvent])    No default
+  :proto      Protocol: :tcp / :udp           :udp"
+  [proc-name host port & {:keys [nd proto]
+                          :or   {nd (threads-suggestion) proto :udp}
                           :as   options}]
   (let [host (if (string? host) (InetAddress/getByName host) host)]
     (map->SNMPV2CTrapProcessor {:proc-name   proc-name
                                 :host        host
                                 :port        port
-                                :community   community
+                                :proto       proto
                                 :nd          nd
                                 :responder   nil
                                 :snmp-entity nil})))
