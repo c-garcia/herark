@@ -62,7 +62,7 @@
 
   Opaque
   (as-tagged [this]
-    [:oid (vec (.getValue this))])
+    [:opaque (vec (.getValue this))])
 
   SshAddress
   (as-tagged [this]
@@ -90,7 +90,7 @@
 
   UnsignedInteger32
   (as-tagged [this]
-    [:unsigned-int32 (.getValue this)]))
+    [:uint32 (.getValue this)]))
 
 (defn- command-responder-event->trap-info
   "Turns `ev` into a map that conforms to SnmpV2CTrapInfo validator"

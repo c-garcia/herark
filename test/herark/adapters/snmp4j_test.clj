@@ -1,12 +1,28 @@
 (ns herark.adapters.snmp4j-test
   (:require [clojure.test :refer :all]
+            [herark.smi.smiv2 :as smiv2]
             [herark.adapters.snmp4j :refer :all]
             [taoensso.timbre :as log]
             [com.stuartsierra.component :as component]
             [herark.tools :refer :all]
-            [herark.test-tools :refer :all])
-  (:import (org.snmp4j.smi OID)
+            [herark.test-tools :refer :all]
+            [schema.core :as s])
+  (:import (org.snmp4j.smi OID Integer32 UnsignedInteger32 Gauge32 Counter32 Counter64 TimeTicks OctetString IpAddress Opaque)
            (java.util.concurrent Executors)))
+
+(deftest smiv2-test
+  (testing "SMIv2 tagged representations from adapter's native classes are correct"
+    (are [x y] (not (s/check y (as-tagged x)))
+               (OID. ".1.2.3.4") smiv2/OID
+               (Integer32. 1) smiv2/Int32
+               (UnsignedInteger32. (int 1)) smiv2/UInt32
+               (Gauge32. (int 1)) smiv2/Gauge32
+               (Counter32. (int 1)) smiv2/Counter32
+               (Counter64. (int 1)) smiv2/Counter64
+               (TimeTicks. (int 1)) smiv2/TimeTicks
+               (OctetString. (byte-array [1])) smiv2/OctetString
+               (IpAddress. "192.168.1.1") smiv2/IPAddress
+               (Opaque. (byte-array [1])) smiv2/Opaque)))
 
 (defn make-testing-processor
   "Creates a trap processor listenting at a random port with the specified
