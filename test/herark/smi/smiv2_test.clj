@@ -208,3 +208,24 @@
              [:opaque [1 \a]]
              [:opaque [1 2 -129]]
              [:opaque (repeat (inc TWO_16_MINUS_1) 1)])))
+
+(deftest v2-variable-test
+  (testing "Valid variables"
+    (are [x] (not (s/check SMIv2Variable x))
+             [:oid [1 2 3]]
+             [:int32 1]
+             [:uint32 1]
+             [:counter32 1]
+             [:gauge32 1]
+             [:counter64 1]
+             [:octet-string [1 2 3]]
+             [:opaque [1 2 3]]
+             [:time-ticks 1]
+             [:ip-address "192.168.1.1"])))
+
+
+(deftest v2-varbind-test
+  (testing "Valid varbinds"
+    (are [x] (not (s/check SMIv2VarBind x))
+             [[:oid [1 2 3]] [:oid [1 2 3]]]
+             [[:oid [1 2 3]] [:int32 1]])))

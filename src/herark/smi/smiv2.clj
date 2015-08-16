@@ -111,3 +111,37 @@
   (octet-string-value? x))
 
 (def Opaque (tag-value-pair :opaque opaque-value?))
+
+(def SMIv2Variable (s/either
+                     OID
+                     Int32
+                     UInt32
+                     Counter32
+                     Gauge32
+                     Counter64
+                     OctetString
+                     Opaque
+                     TimeTicks
+                     IPAddress))
+
+(def SMIv2VarBind (s/pair OID "oid" SMIv2Variable "variable"))
+
+(s/defrecord V2cTrapPDU [request-id :- Int32
+                         error-status :- Int32
+                         error-index :- Int32
+                         varbinds :- [SMIv2VarBind]])
+
+(defn make-v2-trap-pdu
+  [request-id varbinds & {:keys [error-status error-index] :or {error-status 0 error-index 0}}]
+  (->V2cTrapPDU request-id error-status error-index varbinds))
+
+(s/defrecord V2cTrapMessage [version :- (s/eq :v2c)
+                             source-address :- s/Str
+                             community :- [s/Int]
+                             pdu :- V2cTrapPDU])
+(defn make-v2-trap-message
+  [source-address community pdu]
+  (->V2cTrapMessage :v2c source-address community pdu))
+
+(s/defrecord V3TrapPDU [])
+(s/defrecord V3TrapMessage [])

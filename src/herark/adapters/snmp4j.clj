@@ -2,23 +2,25 @@
   (:require [com.stuartsierra.component :as component]
             [taoensso.timbre :as log]
             [schema.core :as s]
-            [herark.core :as hk])
+            [herark.core :as hk]
+            [herark.smi.smiv1 :as smiv1]
+            [herark.smi.smiv2 :as smiv2])
   (:import (org.snmp4j.smi BitString Counter32 Counter64 Gauge32)
            (org.snmp4j.smi GenericAddress Integer32 IpAddress Null OctetString OID)
            (org.snmp4j.smi Opaque SshAddress TcpAddress TimeTicks TlsAddress)
-           (org.snmp4j.smi UdpAddress UnsignedInteger32)
+           (org.snmp4j.smi UdpAddress UnsignedInteger32 VariableBinding)
            (org.snmp4j.security TsmSecurityParameters)
            (org.snmp4j.transport DefaultUdpTransportMapping DefaultTcpTransportMapping)
            (org.snmp4j.util ThreadPool MultiThreadedMessageDispatcher)
-           (org.snmp4j MessageDispatcherImpl Snmp CommandResponder CommandResponderEvent)
-           (org.snmp4j.mp MPv2c)
+           (org.snmp4j MessageDispatcherImpl Snmp CommandResponder CommandResponderEvent PDU PDUv1)
+           (org.snmp4j.mp MPv2c MessageProcessingModel)
            (java.net InetAddress)))
 
+;; TODO Change ITaggedSMI to multimethods
 (defprotocol
   ITaggedSMI
   (as-tagged [this]))
 
-;; TODO: Check which types are actually part of the SNMP Specification
 (extend-protocol ITaggedSMI
   BitString
   (as-tagged [this]
@@ -92,34 +94,70 @@
   (as-tagged [this]
     [:uint32 (.getValue this)]))
 
-(defn- command-responder-event->trap-info
-  "Turns `ev` into a map that conforms to SnmpV2CTrapInfo validator"
+
+(defmulti as-pdu
+          "Transforms a SNMP4J PDU into a PDU record as defined by herark.smi."
+          (fn [p] (class p)))
+
+(defmethod as-pdu PDU [p]
+  (let [error-index (.getErrorIndex p)
+        error-status (.getErrorStatus p)
+        req-id (.getRequestID p)
+        varbinds (mapv (fn [^VariableBinding x] [(as-tagged (.getOid x))
+                                                 (as-tagged (.getVariable x))])
+                       (.getVariableBindings p))]
+    (smiv2/make-v2-trap-pdu req-id varbinds :error-status error-status :error-index error-index)))
+
+(defmethod as-pdu PDUv1 [p]
+  (let [enterprise (vec (.getEnterprise p))
+        [_ source-address] (as-tagged (.getAgentAddress p))
+        generic-trap (.getGenericTrap p)
+        specific-trap (.getSpecificTrap p)
+        timestamp (.getTimestamp p)
+        varbinds (mapv (fn [^VariableBinding x] [(as-tagged (.getOid x))
+                                                 (as-tagged (.getVariable x))])
+                       (.getVariableBindings p))]
+    (smiv1/make-v1-trap-pdu
+      enterprise
+      source-address
+      generic-trap
+      specific-trap
+      timestamp
+      varbinds)))
+
+(defmethod as-pdu :default [p]
+  (throw (IllegalArgumentException. (str "Illegal PDU received: " (.getType p)))))
+
+(defmulti as-message
+          "Transforms a SNMP4J CommandResponderEvent into a Message record as defined by herark.smi."
+          (fn [^CommandResponderEvent e] (.. e getMessageProcessingModel)))
+
+(defmethod as-message MessageProcessingModel/MPv2c [e]
+  (if (not= PDU/TRAP (.. e getPDU getType))
+    (throw (IllegalArgumentException. (str "While in MPv2c, received a trap type: " (.. e getPDU getType)))))
+  (let [[_ [source-address _]] (as-tagged (.getPeerAddress e))
+        community (vec (.getSecurityName e))
+        pdu (as-pdu (.getPDU e))]
+    (smiv2/make-v2-trap-message source-address community pdu)))
+
+(defmethod as-message MessageProcessingModel/MPv1 [e]
+  (if (not= PDU/V1TRAP (.. e getPDU getType))
+    (throw (IllegalArgumentException. (str "While in MPv1, received a trap type: " (.. e getPDU getType)))))
+  (let [[_ [source-address _]] (as-tagged (.getPeerAddress e))
+        community (vec (.getSecurityName e))
+        pdu (as-pdu (.getPDU e))]
+    (smiv1/make-v1-trap-message source-address community pdu)))
+
+(defmethod as-message :default [e]
+  (throw (IllegalArgumentException. (str "Illegal message processing model: " e))))
+
+(defn- command-responder-event->trap-event
+  "For every CommandResponderEvent, it generates an event map with a timestamp and
+  the message as created by as-message."
   [^CommandResponderEvent ev]
-  {:post [(not (s/check hk/SnmpV2CTrapInfo %))]}
-  (let [[t [addr port]] (as-tagged (.getPeerAddress ev))
-        proto (case t
-                :tcp-address :tcp
-                :udp-address :udp
-                (throw (IllegalArgumentException. (str "Unexpected address type in event:" ev))))
-        community (vec (.getSecurityName ev))
-        pdu (.getPDU ev)
-        error-status (.getErrorStatus pdu)
-        error-index (.getErrorIndex pdu)
-        req-id (.. pdu getRequestID getValue)
-        varbinds (mapv (fn [x] [(as-tagged (.getOid x))
-                                (as-tagged (.getVariable x))])
-                       (.getVariableBindings pdu))
-        timestamp (System/currentTimeMillis)]
-    {:version        :v2c
-     :source-address addr
-     :source-port    port
-     :protocol       proto
-     :community      community
-     :request-id     req-id
-     :error-status   error-status
-     :error-index    error-index
-     :varbinds       varbinds
-     :timestamp      timestamp}))
+  (let [now (System/currentTimeMillis)
+        message (as-message ev)]
+    (hk/make-trap-event now message)))
 
 (defrecord SNMPV2CTrapProcessor [proc-name host port proto nd responder snmp-entity]
 
@@ -144,7 +182,7 @@
                    (processPdu [this evt]
                      (try
                        (-> evt
-                           command-responder-event->trap-info
+                           command-responder-event->trap-event
                            responder)
                        (catch Exception e
                          (log/error "Exception caught while dispatching event" e)

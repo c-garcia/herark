@@ -28,3 +28,11 @@
     (integer? x)
     (>= x MINUS_TWO_7)
     (<= x TWO_8_MINUS_1)))
+
+(defn is_port?
+  "Returns true if `x` is a valid TCP/UDP port."
+  [x]
+  (and
+    (integer? x)
+    (> x 1)
+    (<= x 65535)))

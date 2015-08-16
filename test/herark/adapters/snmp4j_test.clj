@@ -62,7 +62,7 @@
               f (fn [e]
                   (log/debug "I got hit!")
                   (try
-                    (let [oid (get-in e [:varbinds 1 1 1])]
+                    (let [oid (get-in e [:message :pdu :varbinds 1 1 1])]
                       (log/debug "Received OID:" (str (OID. (int-array oid))))
                       (deliver received-trap-oid oid))
                     (catch Exception ex

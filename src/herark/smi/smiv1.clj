@@ -5,6 +5,13 @@
 ;; Acording to RFC1155
 ;; https://www.ietf.org/rfc/rfc1155.txt
 
+(def ^:const AUTHENTICATION_FAILURE_TRAP 4)
+(def ^:const COLD_START_TRAP 0)
+(def ^:const ENTERPRISE_SPECIFIC_TRAP 6)
+(def ^:const LINK_DOWN_TRAP 2)
+(def ^:const LINK_UP_TRAP 3)
+(def ^:const WARM_START_TRAP 1)
+
 (defn oid-value?
   "Is `x` a valid oid"
   [x]
@@ -74,4 +81,40 @@
 
 (def IPAddress (tag-value-pair :ip-address ip-address-value?))
 
+(def SMIv1Variable (s/either OID
+                             Int
+                             Gauge
+                             Counter
+                             TimeTicks
+                             OctetString
+                             Opaque
+                             IPAddress))
+
+(def SMIv1VarBind (s/pair OID "oid" SMIv1Variable "variable"))
+
 ;FIXME determine if we need NetWorkAddress
+(s/defrecord V1TrapPDU [enterprise :- OctetString
+                        source-address :- IPAddress
+                        generic-trap-type :- Int
+                        specific-trap-type :- Int
+                        timestamp :- TimeTicks
+                        varbinds :- [SMIv1VarBind]])
+
+(defn make-v1-trap-pdu
+  [enterprise source-address generic-trap-type specific-trap-type timestamp varbinds]
+  (->V1TrapPDU enterprise
+               source-address
+               generic-trap-type
+               specific-trap-type
+               timestamp
+               varbinds))
+
+(s/defrecord V1TrapMessage [version :- (s/eq :v1)
+                            source-address :- s/Str
+                            community :- [s/Int]
+                            pdu :- V1TrapPDU])
+
+(defn make-v1-trap-message
+  [source-address community pdu]
+  (->V1TrapMessage :v1 source-address community pdu))
+
