@@ -3,7 +3,8 @@
             [schema.core :as s]
             [taoensso.timbre :as log])
   (:import (java.nio.charset Charset)
-           (java.nio.file Files FileSystems OpenOption StandardOpenOption)))
+           (java.nio.file Files FileSystems OpenOption StandardOpenOption)
+           (herark.core TrapEvent)))
 
 (defn log-trap!
   "Generates a handler function that logs traps with the specified log `level`. It prepends `message`.
@@ -11,7 +12,7 @@
   end the processing chain."
   [level message]
   (s/fn
-    [e :- hk/SnmpV2CTrapInfo]
+    [e :- TrapEvent]
     (log/log level message)
     (log/log level e)))
 
@@ -27,7 +28,7 @@
                                                StandardOpenOption/CREATE])))]
     (let [file (open-file file-path)]
       (s/fn
-        [e :- hk/SnmpV2CTrapInfo]
+        [e :- TrapEvent]
         (binding [*out* file]
           (println (str e))
           (flush))))))
