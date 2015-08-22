@@ -145,3 +145,12 @@
 
 (s/defrecord V3TrapPDU [])
 (s/defrecord V3TrapMessage [])
+
+(def ^:const COLD-START-TRAP-OID [:oid [1 3 6 1 6 3 1 1 5 1]])
+(defn make-sysuptime-vb
+  [t]
+  [[:oid [1 3 6 1 2 1 1 3 0]][:int32 t]])
+
+(defn make-trapid-vb
+  [id]
+  [[:oid [1 3 6 1 6 3 1 1 4 1 0]][:oid id]])
