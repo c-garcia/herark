@@ -31,7 +31,7 @@
         set-flag (fn [& xs] (log/debug "Setting flag") (reset! flag true))]
     (testing "Middleware invokes function on a strict prefix"
       (try
-        (let [sut (on-trap-with-prefix! nil-handler prefix set-flag)]
+        (let [sut (on-v2c-trap-with-prefix! nil-handler prefix set-flag)]
           (unset-flag)
           (sut evt)
           (is @flag "the function has been invoked and the flag was set."))
@@ -39,7 +39,7 @@
           (unset-flag))))
     (testing "Middleware invokes function on an exact match"
       (try
-        (let [sut (on-trap-with-prefix! nil-handler (get trap-oid 1) set-flag)]
+        (let [sut (on-v2c-trap-with-prefix! nil-handler (get trap-oid 1) set-flag)]
           (unset-flag)
           (sut evt)
           (is @flag "the function has been invoked and the flag was set."))
@@ -47,7 +47,7 @@
           (unset-flag))))
     (testing "Middleware does not invoke function when prefix does not match"
       (try
-        (let [sut (on-trap-with-prefix! nil-handler [0 1 2] set-flag)]
+        (let [sut (on-v2c-trap-with-prefix! nil-handler [0 1 2] set-flag)]
           (unset-flag)
           (sut evt)
           (is (not @flag) "the function has not been invoked and the flag is not set."))
@@ -55,7 +55,7 @@
           (unset-flag))))
     (testing "Middleware with an empty prefix matches any trap"
       (try
-        (let [sut (on-trap-with-prefix! nil-handler [] set-flag)]
+        (let [sut (on-v2c-trap-with-prefix! nil-handler [] set-flag)]
           (unset-flag)
           (sut evt)
           (is @flag "the function has been invoked and the flag was set."))

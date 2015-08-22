@@ -16,8 +16,8 @@
         (f e))
       (log/warn "Community error" e))))
 
-(defn on-trap-with-prefix!
-  "Creates a middleware function that, if a received trap matches an OID prefix `p`, it
+(defn on-v2c-trap-with-prefix!
+  "Creates a middleware function that, if a received v2c trap matches an OID prefix `p`, it
   executes a function. If not, it continues the processing chain."
   [f p action]
   (s/fn [e :- TrapEvent]
