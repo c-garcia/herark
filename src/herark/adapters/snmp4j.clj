@@ -28,15 +28,15 @@
 
   Counter32
   (as-tagged [this]
-    [:counter32 (.getValue this)])
+    [::smiv2/counter32 (.getValue this)])
 
   Counter64
   (as-tagged [this]
-    [:counter64 (.getValue this)])
+    [::smiv2/counter64 (.getValue this)])
 
   Gauge32
   (as-tagged [this]
-    [:gauge32 (.getValue this)])
+    [::smiv2/gauge32 (.getValue this)])
 
   GenericAddress
   (as-tagged [this]
@@ -44,11 +44,11 @@
 
   Integer32
   (as-tagged [this]
-    [:int32 (.getValue this)])
+    [::smiv2/int32 (.getValue this)])
 
   IpAddress
   (as-tagged [this]
-    [:ip-address (.. this getInetAddress getHostAddress)])
+    [::smiv2/ip-address (.. this getInetAddress getHostAddress)])
 
   Null
   (as-tagged [this]
@@ -56,15 +56,15 @@
 
   OctetString
   (as-tagged [this]
-    [:octet-string (vec (.getValue this))])
+    [::smiv2/octet-string (vec (.getValue this))])
 
   OID
   (as-tagged [this]
-    [:oid (vec (.getValue this))])
+    [::smiv2/oid (vec (.getValue this))])
 
   Opaque
   (as-tagged [this]
-    [:opaque (vec (.getValue this))])
+    [::smiv2/opaque (vec (.getValue this))])
 
   SshAddress
   (as-tagged [this]
@@ -76,7 +76,7 @@
 
   TimeTicks
   (as-tagged [this]
-    [:time-ticks (.getValue this)])
+    [::smiv2/time-ticks (.getValue this)])
 
   TlsAddress
   (as-tagged [this]
@@ -92,7 +92,7 @@
 
   UnsignedInteger32
   (as-tagged [this]
-    [:uint32 (.getValue this)]))
+    [::smiv2/uint32 (.getValue this)]))
 
 
 (defmulti as-pdu
@@ -100,20 +100,22 @@
           (fn [p] (class p)))
 
 (defmethod as-pdu PDU [p]
-  (let [error-index (.getErrorIndex p)
-        error-status (.getErrorStatus p)
-        req-id (.getRequestID p)
+  (let [error-index [::smiv2/int32 (.getErrorIndex p)]
+        error-status [::smiv2/int32 (.getErrorStatus p)]
+        req-id [::smiv2/int32 (.getRequestID p)]
         varbinds (mapv (fn [^VariableBinding x] [(as-tagged (.getOid x))
                                                  (as-tagged (.getVariable x))])
                        (.getVariableBindings p))]
-    (smiv2/make-v2-trap-pdu req-id varbinds :error-status error-status :error-index error-index)))
+    (smiv2/make-v2-trap-pdu req-id error-status error-index varbinds)))
 
 (defmethod as-pdu PDUv1 [p]
   (let [enterprise (vec (.getEnterprise p))
+        ;; TODO remove as-tagged on GenericAddress?
         [_ source-address] (as-tagged (.getAgentAddress p))
-        generic-trap (.getGenericTrap p)
-        specific-trap (.getSpecificTrap p)
-        timestamp (.getTimestamp p)
+        source-address [::smiv1/ip-address source-address]
+        generic-trap [::smiv1/int (.getGenericTrap p)]
+        specific-trap [::smiv1/int (.getSpecificTrap p)]
+        timestamp [::smiv1/time-ticks (.getTimestamp p)]
         varbinds (mapv (fn [^VariableBinding x] [(as-tagged (.getOid x))
                                                  (as-tagged (.getVariable x))])
                        (.getVariableBindings p))]

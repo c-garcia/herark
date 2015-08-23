@@ -7,8 +7,7 @@
             [herark.tools :refer :all]
             [herark.test-tools :refer :all]
             [schema.core :as s])
-  (:import (org.snmp4j.smi OID Integer32 UnsignedInteger32 Gauge32 Counter32 Counter64 TimeTicks OctetString IpAddress Opaque)
-           (java.util.concurrent Executors)))
+  (:import (org.snmp4j.smi OID Integer32 UnsignedInteger32 Gauge32 Counter32 Counter64 TimeTicks OctetString IpAddress Opaque)))
 
 (deftest smiv2-test
   (testing "SMIv2 tagged representations from adapter's native classes are correct"

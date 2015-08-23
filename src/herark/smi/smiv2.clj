@@ -16,7 +16,7 @@
     (<= (count x) 128)
     (every? #(and (>= % 0) (<= % TWO_32_MINUS_1)) x)))
 
-(def OID (tag-value-pair :oid oid-value?))
+(def OID (tag-value-pair ::oid oid-value?))
 
 (defn int-value?
   "Is this an SMIv2 Integer?
@@ -35,7 +35,7 @@
   [x]
   (int-value? x))
 
-(def Int32 (tag-value-pair :int32 int32-value?))
+(def Int32 (tag-value-pair ::int32 int32-value?))
 
 (defn uint32-value?
   "Is this an SMIv2 Unsigned32?
@@ -46,7 +46,7 @@
     (>= x 0)
     (<= x TWO_32_MINUS_1)))
 
-(def UInt32 (tag-value-pair :uint32 uint32-value?))
+(def UInt32 (tag-value-pair ::uint32 uint32-value?))
 
 (defn gauge32-value?
   "Is this an SMIv2 Gauge32?
@@ -54,7 +54,7 @@
   [x]
   (uint32-value? x))
 
-(def Gauge32 (tag-value-pair :gauge32 gauge32-value?))
+(def Gauge32 (tag-value-pair ::gauge32 gauge32-value?))
 
 (defn counter32-value?
   "Is this an SMIv2 Counte32?
@@ -62,7 +62,7 @@
   [x]
   (uint32-value? x))
 
-(def Counter32 (tag-value-pair :counter32 counter32-value?))
+(def Counter32 (tag-value-pair ::counter32 counter32-value?))
 
 (defn counter64-value?
   "Is this an SMIv2 Counter64?
@@ -73,7 +73,7 @@
     (>= x 0)
     (<= x TWO_64_MINUS_1)))
 
-(def Counter64 (tag-value-pair :counter64 counter64-value?))
+(def Counter64 (tag-value-pair ::counter64 counter64-value?))
 
 (defn time-ticks-value?
   "Is this an SMIv2 TimeTicks?
@@ -81,7 +81,7 @@
   [x]
   (uint32-value? x))
 
-(def TimeTicks (tag-value-pair :time-ticks time-ticks-value?))
+(def TimeTicks (tag-value-pair ::time-ticks time-ticks-value?))
 
 (defn octet-string-value?
   "Is this an SMIv2 OctetString?
@@ -92,7 +92,7 @@
     (<= (count x) TWO_16_MINUS_1)
     (every? byte-value? x)))
 
-(def OctetString (tag-value-pair :octet-string octet-string-value?))
+(def OctetString (tag-value-pair ::octet-string octet-string-value?))
 
 (defn ip-address-value?
   "Is this an SMIv2 Ip Address?
@@ -102,7 +102,7 @@
     (string? x)
     (re-matches IP_RE x)))
 
-(def IPAddress (tag-value-pair :ip-address ip-address-value?))
+(def IPAddress (tag-value-pair ::ip-address ip-address-value?))
 
 (defn opaque-value?
   "Is this an SMIv2 Opaque?
@@ -110,47 +110,62 @@
   [x]
   (octet-string-value? x))
 
-(def Opaque (tag-value-pair :opaque opaque-value?))
+(def Opaque (tag-value-pair ::opaque opaque-value?))
 
-(def SMIv2Variable (s/either
-                     OID
-                     Int32
-                     UInt32
-                     Counter32
-                     Gauge32
-                     Counter64
-                     OctetString
-                     Opaque
-                     TimeTicks
-                     IPAddress))
+(def SMIv2Value (s/either
+                  OID
+                  Int32
+                  UInt32
+                  Counter32
+                  Gauge32
+                  Counter64
+                  OctetString
+                  Opaque
+                  TimeTicks
+                  IPAddress))
 
-(def SMIv2VarBind (s/pair OID "oid" SMIv2Variable "variable"))
+(def SMIv2VarBind (s/pair OID "oid" SMIv2Value "variable"))
 
 (s/defrecord V2cTrapPDU [request-id :- Int32
                          error-status :- Int32
                          error-index :- Int32
                          varbinds :- [SMIv2VarBind]])
 
-(defn make-v2-trap-pdu
-  [request-id varbinds & {:keys [error-status error-index] :or {error-status 0 error-index 0}}]
+(s/defn make-v2-trap-pdu :- V2cTrapPDU
+  [request-id :- Int32
+   error-status :- Int32
+   error-index :- Int32
+   varbinds :- [SMIv2VarBind]]
   (->V2cTrapPDU request-id error-status error-index varbinds))
 
 (s/defrecord V2cTrapMessage [version :- (s/eq :v2c)
-                             source-address :- s/Str
-                             community :- [s/Int]
+                             source-address :- IPAddress
+                             community :- OctetString
                              pdu :- V2cTrapPDU])
-(defn make-v2-trap-message
-  [source-address community pdu]
+(s/defn make-v2-trap-message :- V2cTrapMessage
+  [source-address :- IPAddress
+   community :- OctetString
+   pdu :- V2cTrapPDU]
   (->V2cTrapMessage :v2c source-address community pdu))
 
+(def ^:const COLD-START-TRAP-OID [::oid [1 3 6 1 6 3 1 1 5 1]])
+(def ^:const WARM-START-TRAP-OID [::oid [1 3 6 1 6 3 1 1 5 2]])
+(def ^:const LINK-DOWN-TRAP-OID [::oid [1 3 6 1 6 3 1 1 5 3]])
+(def ^:const LINK-UP-TRAP-OID [::oid [1 3 6 1 6 3 1 1 5 4]])
+(def ^:const AUTH-FAIL-TRAP-OID [::oid [1 3 6 1 6 3 1 1 5 5]])
+(def ^:const EGP-NEIGH-LOSS-TRAP-OID [::oid [1 3 6 1 6 3 1 1 5 6]])
+(def ^:const SYS-UPTIME-OID [::oid [1 3 6 1 2 1 1 3 0]])
+(def ^:const TRAP-ID-OID [::oid [1 3 6 1 6 3 1 1 4 1 0]])
+
+(s/defn make-sys-uptime-vb :- SMIv2VarBind
+  [t :- TimeTicks]
+  [SYS-UPTIME-OID t])
+
+(s/defn make-trap-id-vb :- SMIv2VarBind
+  [id :- OID]
+  [TRAP-ID-OID id])
+
+;; TODO Introduce v3 support
 (s/defrecord V3TrapPDU [])
 (s/defrecord V3TrapMessage [])
 
-(def ^:const COLD-START-TRAP-OID [:oid [1 3 6 1 6 3 1 1 5 1]])
-(defn make-sysuptime-vb
-  [t]
-  [[:oid [1 3 6 1 2 1 1 3 0]][:int32 t]])
-
-(defn make-trapid-vb
-  [id]
-  [[:oid [1 3 6 1 6 3 1 1 4 1 0]][:oid id]])
