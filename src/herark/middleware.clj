@@ -50,9 +50,9 @@
                                       :pdu     {:generic-trap-type [::smiv1/int (g :guard #{0 1 2 3 4 5})]
                                                 :enterprise        [::smiv1/oid [1 3 6 1 6 3 1 1 5]]}}}] [1 3 6 1 6 3 1 1 5 (inc g)]
                           [{:message {:version :v1
-                                      :pdu     {:generic-trap-type  6
-                                                :specific-trap-type s
-                                                :enterprise         [::smiv1/oid e]}}}] (conj (vec e) s)
+                                      :pdu     {:generic-trap-type  [::smiv1/int 6]
+                                                :specific-trap-type [::smiv1/int s]
+                                                :enterprise         [::smiv1/oid ent]}}}] (conj (vec ent) 0 s)
                           :else nil)]
       (if trap-oid
         (do
@@ -67,7 +67,7 @@
                 (log/debug "Received prefix:" (vec received-prefix) " does not match " p)
                 (f e)))))
         (do
-          (log/debug "Unknown event. ")
+          (log/debug "Unknown event.")
           (f e))))))
 
 

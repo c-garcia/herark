@@ -21,7 +21,7 @@
       (println event)
       event)))
 
-(deftest on-trap-with-prefix!-v2c-test
+(deftest on-v2c-trap-with-prefix!-test
   (let [source-address [::smiv2/ip-address "127.0.0.1"]
         request-id [::smiv2/int32 0]
         community [::smiv2/octet-string (vec (.getBytes "public"))]
@@ -78,19 +78,43 @@
                                       vbs)
           msg (smiv1/make-v1-trap-message source-address community pdu)
           event (hk/make-trap-event (tc/to-long (t/now)) msg :reason "testing event")]
-      (println event)
       event)))
 
-(deftest on-trap-with-prefix!-v1-test
+(defn- make-v1-specific-testing-event
+  [source-address community enterprise specific-trap-type]
+  (s/with-fn-validation
+    (let [vbs []
+          pdu (smiv1/make-v1-trap-pdu source-address
+                                      [::smiv1/int 6]
+                                      enterprise
+                                      specific-trap-type
+                                      [::smiv1/time-ticks (tc/to-long (t/now))]
+                                      vbs)
+          msg (smiv1/make-v1-trap-message source-address community pdu)
+          event (hk/make-trap-event (tc/to-long (t/now)) msg :reason "testing event")]
+      event)))
+
+(deftest on-v1-trap-with-prefix!-test
   (let [source-address [::smiv1/ip-address "192.168.0.1"]
-        generic-trap-type [::smiv1/int 0]                   ;; cold-start
         community [::smiv1/octet-string (vec (map int (seq "private")))]
-        evt (make-v1-generic-testing-event source-address community generic-trap-type)
         flag (atom false)
         set-flag (fn [& xs] (log/debug "setting flag") (reset! flag true))
         unset-flag (fn [& xs] (log/debug "unsetting flag") (reset! flag false))]
-    (testing "Matches a generic trap X with enterprise 1.3.6.1.6.3.1.1.5.X+1"
-      (let [sut (on-v1-trap-with-prefix! nil-handler [1 3 6 1 6 3 1 1 5] set-flag)]
+    (testing "A generic trap X is matched enterprise 1.3.6.1.6.3.1.1.5.X+1"
+      (let [sut (on-v1-trap-with-prefix! nil-handler [1 3 6 1 6 3 1 1 5] set-flag)
+            generic-trap-type [::smiv1/int 0]               ;; cold-start
+            evt (make-v1-generic-testing-event source-address community generic-trap-type)]
+        (try
+          (unset-flag)
+          (sut evt)
+          (is @flag "action has been invokend and the flag was set")
+          (finally
+            (unset-flag)))))
+    (testing "An specific trap X is matched with the enterprise prefix, 0,  and the specific trap number"
+      (let [sut (on-v1-trap-with-prefix! nil-handler [1 3 6 1 4 1 789 0] set-flag) ;; as an example, NetApp
+            enterprise [::smiv1/oid [1 3 6 1 4 1 789]]      ;; Anything coming from NetApp
+            specific-trap-type [::smiv1/int 56]             ;; CPU OK
+            evt (make-v1-specific-testing-event source-address community enterprise specific-trap-type)]
         (try
           (unset-flag)
           (sut evt)
