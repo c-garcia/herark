@@ -16,7 +16,7 @@ It is comprised of:
 
 Add the item below to your leiningen `:dependencies`
 
-    [eu.obliquo/herark "0.1.8-SNAPSHOT"]
+    [eu.obliquo/herark "0.1.9-SNAPSHOT"]
     
 ## The big picture
 
