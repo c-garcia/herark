@@ -12,11 +12,17 @@
   matches, the processing continues to the next function. If not, it returns."
   [f c]
   (s/fn [e :- TrapEvent]
-    (if (= (get-in e [:message :community]) c)
-      (do
-        (log/debug "Community ok")
-        (f e))
-      (log/warn "Community error" e))))
+    (let [comm-match (match [e]
+                            [{:message {:version   :v1
+                                        :community [::smiv1/octet-string pdu-c]}}] (= pdu-c c)
+                            [{:message {:version  :v2c
+                                        :community [::smiv2/octet-string pdu-c]}}] (= pdu-c c)
+                            :else nil)]
+      (if comm-match
+        (do
+          (log/debug "communities match.")
+          (f e))
+        (log/error "community does not match.")))))
 
 (defn on-v2c-trap-with-prefix!
   "Creates a middleware function that, if a received v2c trap matches an OID prefix `p`, it

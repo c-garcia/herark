@@ -18,7 +18,6 @@
           pdu (smiv2/make-v2-trap-pdu request-id [::smiv2/int32 0] [::smiv2/int32 0] vbs)
           msg (smiv2/make-v2-trap-message source-address community pdu)
           event (hk/make-trap-event (tc/to-long (t/now)) msg :reason "testing event")]
-      (println event)
       event)))
 
 (deftest on-v2c-trap-with-prefix!-test
@@ -121,3 +120,57 @@
           (is @flag "action has been invokend and the flag was set")
           (finally
             (unset-flag)))))))
+
+(deftest check-static-community!-test
+  (let [flag (atom false)
+        set-flag! (fn [& x] (log/debug "Setting flag")(reset! flag true))
+        unset-flag! (fn [& x] (log/debug "Unsetting flag")(reset! flag false))
+        community (vec (.getBytes "public"))]
+    (testing "When receiving a v1 trap with the correct community, the next function is called"
+      (try
+        (let [_ (unset-flag!)
+              sut (check-static-community! set-flag! community)
+              evt (make-v1-generic-testing-event [::smiv1/ip-address "192.168.0.1"] [::smiv1/octet-string community] [::smiv1/int 0])
+              _ (sut evt)]
+          (is @flag "The function has been called. The flag is set"))
+        (finally
+          (unset-flag!))))
+    (testing "When receiving a v1 trap with incorrect community, the next function is not called"
+      (try
+        (let [_ (unset-flag!)
+              bad-community (vec (.getBytes "bad"))
+              sut (check-static-community! set-flag! community)
+              evt (make-v1-generic-testing-event [::smiv1/ip-address "192.168.0.1"] [::smiv1/octet-string bad-community] [::smiv1/int 0])
+              _ (sut evt)]
+          (is (not @flag) "The function has not been called. The flag is not set"))
+        (finally
+          (unset-flag!))))
+    (testing "When receiving a v2 trap with the correct community, the next function is called"
+      (try
+        (let [_ (unset-flag!)
+              sut (check-static-community! set-flag! community)
+              evt (make-v2c-testing-event
+                    [::smiv2/ip-address "192.168.0.1"]
+                    [::smiv2/int32 0]
+                    [::smiv2/octet-string community]
+                    [::smiv2/time-ticks 0]
+                    [::smiv2/oid [1 2 3 4]])
+              _ (sut evt)]
+          (is @flag "The function has been called. The flag is set"))
+        (finally
+          (unset-flag!))))
+    (testing "When receiving a v2 trap with an incorrect community, the next function is not called"
+      (try
+        (let [_ (unset-flag!)
+              bad-community (vec (.getBytes "bad"))
+              sut (check-static-community! set-flag! community)
+              evt (make-v2c-testing-event
+                    [::smiv2/ip-address "192.168.0.1"]
+                    [::smiv2/int32 0]
+                    [::smiv2/octet-string bad-community]
+                    [::smiv2/time-ticks 0]
+                    [::smiv2/oid [1 2 3 4]])
+              _ (sut evt)]
+          (is (not @flag) "The function has not been called. The flag is not set"))
+        (finally
+          (unset-flag!))))))
