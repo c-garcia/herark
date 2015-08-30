@@ -1,4 +1,8 @@
-(ns herark.tools
+(ns herark.adapters.tools
+  "Tools to help implementing or testing adapters when sending actual PDU over the wire
+  is required. The need of these functions to be close to the lowest layer, makes them
+  to to use the abstractions provided in the `herark.smi` namespaces.
+  The functions here are built using the SNMP4J stack."
   (:require [clj-time.core :as t]
             [clj-time.coerce :as tc]
             [taoensso.timbre :as log])
@@ -7,7 +11,7 @@
            (org.snmp4j.mp SnmpConstants)
            (org.snmp4j.transport DefaultUdpTransportMapping DefaultTcpTransportMapping)))
 
-(defn make-v2c-target
+(defn- make-v2c-target
   "Creates a SNMP4J V2C UDP target on `host`:`port` and `community`.
   `community` can be specificed as a byte-array or String."
   [^String host ^String port community & {:keys [proto] :or {proto :udp}}]
@@ -21,7 +25,7 @@
               (.setAddress addr))]
     tgt))
 
-(defn time-ticks
+(defn- time-ticks
   "As per the SNMP standard, gets the hundredths of seconds between a date, `s`  and now.
   If no parameter is passed, the current day at midnight (UTC) is assumed to be the starting point."
   ([s]
@@ -33,9 +37,12 @@
   ([]
    (time-ticks (t/today-at-midnight))))
 
-(defn make-notification-pdu
-  "Creates a SNMP V2C notification PDU without additional varbinds from an OID in dotted string form: `oid`.
-  If uptime is not passed, the current timestamp is assumed."
+(defn make-notification-v2c-pdu
+  "Creates a specific implementation version of the SNMP V2C notification PDU
+  *only intented to interact with the functions in this namespace*.
+
+  * `oid`:    (string) oid in 1.2.4.5 format.
+  * `uptime`: (integer) uptime. Default, centi-seconds since midnight."
   [^String oid & {:keys [uptime]}]
   (let [uptime (Integer32. (if-not uptime (time-ticks) uptime))
         vb-uptime (VariableBinding. SnmpConstants/sysUpTime uptime)
@@ -52,8 +59,14 @@
               (.setType PDU/NOTIFICATION))]
     pdu))
 
-(defn send-pdu
-  "Sends the `pdu` PDU to a V2C Manager listening on UDP `host`:`port` with `community`."
+(defn send-v2c-pdu
+  "Sends a SNMP v2c PDU to a manager:
+
+  * `host`:       (string) the hostname of the manager.
+  * `port`:       (integer) the port
+  * `community`:  (string or byte array) the community.
+  * `proto`:      (keyword) :tcp or :udp
+  * `pdu`:        (pdu) pdu as created by `make-notification-v2c-pdu`."
   [host port community pdu & {:keys [proto] :or {proto :udp}}]
   (log/debug "Sending pdu to: " host ":" port)
   (let [tgt (make-v2c-target host port community :proto proto)

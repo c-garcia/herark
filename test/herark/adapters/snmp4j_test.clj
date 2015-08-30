@@ -4,7 +4,7 @@
             [herark.adapters.snmp4j :refer :all]
             [taoensso.timbre :as log]
             [com.stuartsierra.component :as component]
-            [herark.tools :refer :all]
+            [herark.adapters.tools :refer :all]
             [herark.test-tools :refer :all]
             [schema.core :as s])
   (:import (org.snmp4j.smi OID Integer32 UnsignedInteger32 Gauge32 Counter32 Counter64 TimeTicks OctetString IpAddress Opaque)))
@@ -47,8 +47,8 @@
         (let [tp (make-testing-processor process-trap)]
           (log/debug "Created testing processor: " (get-in tp [:processor]))
           (testing "When I send a v2c trap to this processor"
-            (let [pdu (make-notification-pdu ".1.2.3.4")
-                  _ (send-pdu (get-in tp [:processor :host]) (get-in tp [:processor :port]) "public" pdu)
+            (let [pdu (make-notification-v2c-pdu ".1.2.3.4")
+                  _ (send-v2c-pdu (get-in tp [:processor :host]) (get-in tp [:processor :port]) "public" pdu)
                   invoked? (deref flag 2000 false)]
               (is invoked? "the function is invoked")))
           (component/stop tp))))))
@@ -69,8 +69,8 @@
                       (deliver received-trap-oid []))))
               tp (make-testing-processor f)]
           (testing "when I send a notification with that OID"
-            (let [pdu (make-notification-pdu trap-oid-str)
-                  _ (send-pdu (get-in tp [:processor :host]) (get-in tp [:processor :port]) "public" pdu)]
+            (let [pdu (make-notification-v2c-pdu trap-oid-str)
+                  _ (send-v2c-pdu (get-in tp [:processor :host]) (get-in tp [:processor :port]) "public" pdu)]
               (is (= (OID. (int-array (deref received-trap-oid 2000 []))) (OID. trap-oid-str)) "The received trap has this OID"))
             (component/stop tp)))))))
 
@@ -89,11 +89,11 @@
                   update-times 100
                   thread-pool (Executors/newFixedThreadPool avail-proc)
                   send-notif (fn [] (doseq [_ (range update-times)]
-                                      (let [pdu (make-notification-pdu ".1.3.6.1.6.3.1.1.5.3")
+                                      (let [pdu (make-notification-v2c-pdu ".1.3.6.1.6.3.1.1.5.3")
                                             host (get-in tp [:processor :host])
                                             port (get-in tp [:processor :port])]
                                         (try
-                                          (send-pdu host port "public" pdu)
+                                          (send-v2c-pdu host port "public" pdu)
                                           (catch Exception e
                                             (log/error "Exception catched while sending PDU" e))))))]
               (testing "When I execute all the threads and wait for the result"
@@ -117,8 +117,8 @@
         (let [tp (make-testing-processor process-trap :proto :tcp)]
           (log/debug "Created testing processor: " (get-in tp [:processor]))
           (testing "when I send a v2c trap to this processor using TCP, "
-            (let [pdu (make-notification-pdu ".1.2.3.4")
-                  _ (send-pdu (get-in tp [:processor :host]) (get-in tp [:processor :port]) "public" pdu :proto :tcp)
+            (let [pdu (make-notification-v2c-pdu ".1.2.3.4")
+                  _ (send-v2c-pdu (get-in tp [:processor :host]) (get-in tp [:processor :port]) "public" pdu :proto :tcp)
                   invoked? (deref flag 2000 false)]
               (is invoked? "the function is invoked")))
           (component/stop tp))))))

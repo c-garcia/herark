@@ -16,7 +16,10 @@
                  [org.clojure/core.match "0.3.0-alpha4"]
                  [org.clojure/test.check "0.7.0"]
                  [schema-gen "0.1.5"]]
-  :plugins [[lein-environ "1.0.0"]]
+  :plugins [[lein-environ "1.0.0"]
+            [codox "0.8.13"]]
+  :codox {:output-dir "target/codox"
+          :defaults {:doc/format :markdown}}
   :main herark.svc
   :profiles {:dev {:env {:msg "TESTING ENV"}}
              :uberjar {:aot :all}})
