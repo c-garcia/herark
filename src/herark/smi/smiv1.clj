@@ -132,37 +132,50 @@
   "Schema for SMI Variable Bindings."
   (s/pair OID "oid" SMIv1Value "variable"))
 
-;; Turn records into schemas
-(s/defrecord V1TrapPDU [enterprise :- OID
-                        source-address :- IPAddress
-                        generic-trap-type :- Int
-                        specific-trap-type :- Int
-                        timestamp :- TimeTicks
-                        varbinds :- [SMIv1VarBind]])
+(s/defschema V1TrapPDU
+           "SNMPv1 Trap PDU map. It contains:
+
+           * `:source-address`: IP address of the entity sending the trap.
+           * `:generic-trap-type`: SNMPv1 Generic trap type.
+           * `:enterprise`: Enterprise OID if the trap is specific.
+           * `:specific-trap-type`: SNMPv1 Specific trap type.
+           * `timestamp`: 100ths of second since the entitiy came up
+           * `varbinds`: Variable bindings."
+           {(s/required-key :source-address) IPAddress
+            (s/required-key :generic-trap-type) Int
+            (s/required-key :enterprise) OID
+            (s/required-key :specific-trap-type) Int
+            (s/required-key :timestamp) TimeTicks
+            (s/required-key :varbinds) [SMIv1VarBind]})
 
 (s/defn make-v1-trap-pdu :- V1TrapPDU
-  "Creates an SNMPv1 trap PDU after receiving tagged values as parameters. It does
-  _little_ beyond providing a uniform interface and type checking:
+  "Creates an SNMPv1 trap PDU after receiving tagged values as parameters.
+  Please, see the `V1TrapPDU` schema to get more information."
 
-  * `source-address`:       `[:smiv1/ip-address \"192.168.0.1\"]`
-  * `generic-trap-type`:    `[:smiv1/int 3]`
-  * `enterprise`:           `[:smiv1/octet-string [1 3 6 1 4 1 XXX]]`
-  * `timestamp`:            `[:smiv1/time-ticks 132132]`
-  * `varbinds`:             `[[[:smiv1/oid [1 3 ...] [:smiv1/int 1984]]]`."
   [source-address :- IPAddress
    generic-trap-type :- Int
    enterprise :- OID
    specific-trap-type :- Int
    timestamp :- TimeTicks
    varbinds :- [SMIv1VarBind]]
-  (->V1TrapPDU enterprise source-address generic-trap-type specific-trap-type timestamp varbinds))
+  {:source-address source-address
+   :generic-trap-type generic-trap-type
+   :enterprise enterprise
+   :specific-trap-type specific-trap-type
+   :timestamp timestamp
+   :varbinds varbinds})
 
-;; SNMP v1 Trap Message
-(s/defrecord ^{:doc "SNMP v1 Trap Message. It contains the PDU as well as other data."} V1TrapMessage
-  [version :- (s/eq :v1)
-   source-address :- IPAddress
-   community :- OctetString
-   pdu :- V1TrapPDU])
+(s/defschema V1TrapMessage
+  "SNMPv1 Trap Message schema. It contains:
+
+  * SNMP Version (:v1)
+  * Source Address which may be different of the PDU one
+  * community as an octet string
+  * pdu"
+  {(s/required-key :version)        (s/eq :v1)
+   (s/required-key :source-address) IPAddress
+   (s/required-key :community)      OctetString
+   (s/required-key :pdu)            V1TrapPDU})
 
 (s/defn make-v1-trap-message :- V1TrapMessage
   "Creates an SNMPv1 message receiving tagged values as parameters.
@@ -176,7 +189,10 @@
   [source-address :- IPAddress
    community :- OctetString
    pdu :- V1TrapPDU]
-  (->V1TrapMessage :v1 source-address community pdu))
+  {:version        :v1
+   :source-address source-address
+   :community      community
+   :pdu            pdu})
 
 (def
   ^{:const true :doc "Integer value for the generic trap AUTHENTICATION FAILURE"}

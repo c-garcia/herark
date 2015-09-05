@@ -198,29 +198,50 @@
   "Schema for SMIv2 Variable Bindings."
   (s/pair OID "oid" SMIv2Value "variable"))
 
-;; TODO Turn records into schemas
-(s/defrecord V2cTrapPDU [request-id :- Int32
-                         error-status :- Int32
-                         error-index :- Int32
-                         varbinds :- [SMIv2VarBind]])
+(s/defschema V2cTrapPDU
+  "Schema for an SNMP v2c Trap PDU (so it does not include the PDU type).
+  It includes:
+
+  * `:request-id`:
+  * `:error-status`: SNMP error estatus, normally 0.
+  * `:error-index`: Index of the VarBind that caused the error.
+  * `varbinds`: Variable bindings including timestamp and trap type."
+  {(s/required-key :request-id)   Int32
+   (s/required-key :error-status) Int32
+   (s/required-key :error-index)  Int32
+   (s/required-key :varbinds)     [SMIv2VarBind]})
 
 (s/defn make-v2-trap-pdu :- V2cTrapPDU
-  "Creates a SNMP v2c Trap PDU from their SMIv2 constituents."
+  "Creates a SNMP v2c Trap PDU from their SMIv2 constituents. For more
+  information on the parameters, please, have a look at the V2cTrapPDUS schema."
   [request-id :- Int32
    error-status :- Int32
    error-index :- Int32
    varbinds :- [SMIv2VarBind]]
-  (->V2cTrapPDU request-id error-status error-index varbinds))
+  {:request-id   request-id
+   :error-status error-status
+   :error-index  error-index
+   :varbinds     varbinds})
 
-(s/defrecord V2cTrapMessage [version :- (s/eq :v2c)
-                             source-address :- IPAddress
-                             community :- OctetString
-                             pdu :- V2cTrapPDU])
+(s/defschema V2cTrapMessage
+  "Schema for an SNMP v2c Trap Message. It includes:
+
+  * `:source-address`: the ip address the message is coming from.
+  * `:community`: the community string.
+  * `:pdu`: the PDU."
+  {(s/required-key :version)        (s/eq :v2c)
+   (s/required-key :source-address) IPAddress
+   (s/required-key :community)      OctetString
+   (s/required-key :pdu)            V2cTrapPDU})
+
 (s/defn make-v2-trap-message :- V2cTrapMessage
   [source-address :- IPAddress
    community :- OctetString
    pdu :- V2cTrapPDU]
-  (->V2cTrapMessage :v2c source-address community pdu))
+  {:version        :v2c
+   :source-address source-address
+   :community      community
+   :pdu            pdu})
 
 (def
   ^{:const true :doc "Cold start trap"}

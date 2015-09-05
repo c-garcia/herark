@@ -12,18 +12,17 @@
             [herark.smi.smiv2 :as smiv2]
             [schema.core :as s]
             [taoensso.timbre :as log]
-            [clojure.core.match :refer [match]])
-  (:import [herark.core TrapEvent]))
+            [clojure.core.match :refer [match]]))
 
 (defn check-static-community!
   "Creates a middleware function that, for each received trap checks the SNMP community `c`. If the community
   matches, the processing continues to the next function. If not, it returns."
   [f c]
-  (s/fn [e :- TrapEvent]
+  (s/fn [e :- hk/TrapEvent]
     (let [comm-match (match [e]
                             [{:message {:version   :v1
                                         :community [::smiv1/octet-string pdu-c]}}] (= pdu-c c)
-                            [{:message {:version  :v2c
+                            [{:message {:version   :v2c
                                         :community [::smiv2/octet-string pdu-c]}}] (= pdu-c c)
                             :else nil)]
       (if comm-match
@@ -36,7 +35,7 @@
   "Creates a middleware function that, if a received v2c trap matches an OID prefix `p`, it
   executes a function. If not, it continues the processing chain."
   [f p action]
-  (s/fn [e :- TrapEvent]
+  (s/fn [e :- hk/TrapEvent]
     (let [trap-oid (match [e]
                           [{:message {:version :v2c :pdu {:varbinds [_ [_ [::smiv2/oid o]]]}}}] o
                           :else nil)]
@@ -60,7 +59,7 @@
   "Creates a middleware function that, if a received v1 trap matches an OID prefix `p`, it
   executes a function. If not, it continues the processing chain."
   [f p action]
-  (s/fn [e :- TrapEvent]
+  (s/fn [e :- hk/TrapEvent]
     (let [trap-oid (match [e]
                           [{:message {:version :v1
                                       :pdu     {:generic-trap-type [::smiv1/int (g :guard #{0 1 2 3 4 5})]

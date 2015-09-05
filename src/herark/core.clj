@@ -15,15 +15,35 @@
   (:require [schema.core :as s]
             [herark.smi.misc :refer :all]))
 
-;; Turn records into schemas
-(s/defrecord TrapEvent [timestamp :- long
-                        message :- (s/pred #(contains? % :version))])
+(def ^{:const true :doc "2**63-1"}
+TWO-63-MINUS-1
+  9223372036854775807)
 
-(defn make-trap-event
-  "Creates a trap event from a map or receiving timestamp, message and
-  other potential key-value pairs."
-  ([options]
-   (map->TrapEvent options))
-  ([timestamp message & {:as other}]
-   (let [options (assoc other :timestamp timestamp :message message)]
-     (make-trap-event options))))
+(s/defschema EventTimeStamp
+  "Timestamp for Trap Events"
+  (s/both s/Int
+          (s/pred #(> % 0))
+          (s/pred #(< % TWO-63-MINUS-1))))
+
+(s/defschema SNMPVersioned
+  "Includes an SNMP Version"
+  {(s/required-key :version) s/Keyword
+   s/Keyword                 s/Any})
+
+(s/defschema TrapEvent
+  "Trap event is a map which will be passed to a responder function.
+  Middleware functions are free to enrich this map with any key-value
+  pair they feel like."
+  {(s/required-key :timestamp) EventTimeStamp
+   (s/required-key :message)   SNMPVersioned
+   s/Keyword                   s/Any})
+
+(s/defn make-trap-event :- TrapEvent
+  "Creates a trap event from a timestamp, message and
+  other potential key-value pairs.
+
+  `other-map-elements`: will be passed to `apply hash-map`"
+  [timestamp :- EventTimeStamp message :- SNMPVersioned & other-map-elements]
+  (let [other (apply hash-map other-map-elements)
+        res (assoc other :timestamp timestamp :message message)]
+    res))
