@@ -25,84 +25,63 @@
            (org.snmp4j.mp MPv2c MessageProcessingModel)
            (java.net InetAddress)))
 
-;; TODO Change ITaggedSMI to multimethods
-(defprotocol
-  ITaggedSMI
-  (as-tagged [this]))
+(defmulti as-tagged
+          "Transforms an object into a tagged value. It will
+          be used to transform SNMP Libraries object types into
+          `herark.smi` representations."
+          (fn [x] (class x)))
 
-(extend-protocol ITaggedSMI
-  BitString
-  (as-tagged [this]
-    [:bit-string (vec (.getValue this))])
+(defmethod as-tagged BitString [x]
+  [:bit-string (vec (.getValue x))])
 
-  Counter32
-  (as-tagged [this]
-    [::smiv2/counter32 (.getValue this)])
+(defmethod as-tagged Counter32 [x]
+  [::smiv2/counter32 (.getValue x)])
 
-  Counter64
-  (as-tagged [this]
-    [::smiv2/counter64 (.getValue this)])
+(defmethod as-tagged Counter64 [x]
+  [::smiv2/counter64 (.getValue x)])
 
-  Gauge32
-  (as-tagged [this]
-    [::smiv2/gauge32 (.getValue this)])
+(defmethod as-tagged Gauge32 [x]
+  [::smiv2/gauge32 (.getValue x)])
 
-  GenericAddress
-  (as-tagged [this]
-    [:generic-address (.toString this)])
+(defmethod as-tagged Integer32 [x]
+  [::smiv2/int32 (.getValue x)])
 
-  Integer32
-  (as-tagged [this]
-    [::smiv2/int32 (.getValue this)])
+(defmethod as-tagged IpAddress [x]
+  [::smiv2/ip-address (.. x getInetAddress getHostAddress)])
 
-  IpAddress
-  (as-tagged [this]
-    [::smiv2/ip-address (.. this getInetAddress getHostAddress)])
+;; this is not an SMIv2 type
+(defmethod as-tagged Null [_]
+  [::null nil])
 
-  Null
-  (as-tagged [this]
-    [:null nil])
+(defmethod as-tagged OctetString [x]
+  [::smiv2/octet-string (vec (.getValue x))])
 
-  OctetString
-  (as-tagged [this]
-    [::smiv2/octet-string (vec (.getValue this))])
+(defmethod as-tagged OID [x]
+  [::smiv2/oid (vec (.getValue x))])
 
-  OID
-  (as-tagged [this]
-    [::smiv2/oid (vec (.getValue this))])
+(defmethod as-tagged Opaque [x]
+  [::smiv2/opaque (vec (.getValue x))])
 
-  Opaque
-  (as-tagged [this]
-    [::smiv2/opaque (vec (.getValue this))])
+(defmethod as-tagged SshAddress [x]
+  [::ssh-address [(.. x getInetAddress getHostAddress) (.getPort x) (.getUser x)]])
 
-  SshAddress
-  (as-tagged [this]
-    [:ssh-address [(.. this getInetAddress getHostAddress) (.getPort this) (.getUser this)]])
+(defmethod as-tagged TcpAddress [x]
+  [::tcp-address [(.. x getInetAddress getHostAddress) (.getPort x)]])
 
-  TcpAddress
-  (as-tagged [this]
-    [:tcp-address [(.. this getInetAddress getHostAddress) (.getPort this)]])
+(defmethod as-tagged TimeTicks [x]
+  [::smiv2/time-ticks (.getValue x)])
 
-  TimeTicks
-  (as-tagged [this]
-    [::smiv2/time-ticks (.getValue this)])
+(defmethod as-tagged TlsAddress [x]
+  [::tls-address [(.. x getInetAddress getHostAddress) (.getPort x)]])
 
-  TlsAddress
-  (as-tagged [this]
-    [:tls-address [(.. this getInetAddress getHostAddress) (.getPort this)]])
+(defmethod as-tagged TsmSecurityParameters [x]
+  [::tsm-security-params (vec (.getValue x))])
 
-  TsmSecurityParameters
-  (as-tagged [this]
-    [:tsm-security-params (vec (.getValue this))])
+(defmethod as-tagged UdpAddress [x]
+  [::udp-address [(.. x getInetAddress getHostAddress) (.getPort x)]])
 
-  UdpAddress
-  (as-tagged [this]
-    [:udp-address [(.. this getInetAddress getHostAddress) (.getPort this)]])
-
-  UnsignedInteger32
-  (as-tagged [this]
-    [::smiv2/uint32 (.getValue this)]))
-
+(defmethod as-tagged UnsignedInteger32 [x]
+  [::smiv2/uint32 (.getValue x)])
 
 (defmulti as-pdu
           "Transforms a SNMP4J PDU into a PDU record as defined by herark.smi."
@@ -119,7 +98,6 @@
 
 (defmethod as-pdu PDUv1 [p]
   (let [enterprise (vec (.getEnterprise p))
-        ;; TODO remove as-tagged on GenericAddress?
         [_ source-address] (as-tagged (.getAgentAddress p))
         source-address [::smiv1/ip-address source-address]
         generic-trap [::smiv1/int (.getGenericTrap p)]

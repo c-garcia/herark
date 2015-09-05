@@ -116,6 +116,7 @@
   "Schema for SMI IPAdress."
   (tag-value-pair ::ip-address ip-address-value?))
 
+;; We have not added GenericAddress since it is obsolete.
 (s/defschema SMIv1Value
   "Schema for SMI Values."
   (s/either OID
@@ -131,7 +132,6 @@
   "Schema for SMI Variable Bindings."
   (s/pair OID "oid" SMIv1Value "variable"))
 
-;FIXME determine if we need NetworkAddress
 (s/defrecord V1TrapPDU [enterprise :- OID
                         source-address :- IPAddress
                         generic-trap-type :- Int
