@@ -1,4 +1,10 @@
 (ns herark.handlers
+  "Some handlers that can be used by herark. A _handler_ is a
+  side-effecting function that receives a `TrapEvent` and does something
+  useful with it. Its return value is discarded.
+
+  The same as in Ring, we provide here HOF that generate handlers with
+  an specific configuration."
   (:require [herark.core :as hk]
             [schema.core :as s]
             [taoensso.timbre :as log])

@@ -46,7 +46,7 @@
   (testing "Valid Counters"
     (are [x] (not (s/check Counter x))
              [::smiv1/counter 0]
-             [::smiv1/counter TWO_32_MINUS_1]
+             [::smiv1/counter TWO-32-MINUS-1]
              [::smiv1/counter 128]))
   (testing "Invalid Counters"
     (are [x] (s/check Counter x)
@@ -55,13 +55,13 @@
              'a
              ::smiv1/counter
              [::smiv1/counter -1]
-             [::smiv1/counter (inc TWO_32_MINUS_1)])))
+             [::smiv1/counter (inc TWO-32-MINUS-1)])))
 
 (deftest gauge-test
   (testing "Valid Gauges"
     (are [x] (not (s/check Gauge x))
              [::smiv1/gauge 0]
-             [::smiv1/gauge TWO_32_MINUS_1]
+             [::smiv1/gauge TWO-32-MINUS-1]
              [::smiv1/gauge 128]))
   (testing "Invalid Gauges"
     (are [x] (s/check Gauge x)
@@ -70,14 +70,14 @@
              'a
              ::smiv1/gauge
              [::smiv1/gauge -1]
-             [::smiv1/gauge (inc TWO_32_MINUS_1)])))
+             [::smiv1/gauge (inc TWO-32-MINUS-1)])))
 
 
 (deftest time-ticks-test
   (testing "Valid TimeTicks"
     (are [x] (not (s/check TimeTicks x))
              [::smiv1/time-ticks 0]
-             [::smiv1/time-ticks TWO_32_MINUS_1]
+             [::smiv1/time-ticks TWO-32-MINUS-1]
              [::smiv1/time-ticks 128]))
   (testing "Invalid TimeTicks"
     (are [x] (s/check TimeTicks x)

@@ -1,4 +1,13 @@
 (ns herark.adapters.snmp4j
+  "Herark adapter implemented using, as foundations:
+
+  * The SNMP4J toolkit
+  * The Stuart Sierra's component library.
+
+  ### Interesting functions
+
+  * `make-snmp-v2c-processor`: creates an SNMPv2c trap processor implementing
+      the Component protocol."
   (:require [com.stuartsierra.component :as component]
             [taoensso.timbre :as log]
             [schema.core :as s]
@@ -215,7 +224,8 @@
   []
   (+ 2 (.. (Runtime/getRuntime) availableProcessors)))
 
-(defn snmp-v2c-trap-processor
+
+(defn make-snmp-v2c-trap-processor
   "Creates a SNMP V2C UPD trap processor with name `proc-name`,
   listening on `host`:`port`.
 

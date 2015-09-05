@@ -5,7 +5,7 @@
 
   To interface with the OS service management facilities it implements
   `apache.commons.daemon.Daemon`."
-  (:require [herark.adapters.snmp4j :refer [snmp-v2c-trap-processor]]
+  (:require [herark.adapters.snmp4j :refer [make-snmp-v2c-trap-processor]]
             [herark.handlers :as hn]
             [com.stuartsierra.component :as component]
             [environ.core :refer [env]]
@@ -28,7 +28,7 @@
     (->> (component/system-map
            :responder (hn/log-trap! :debug "Received event")
            :app (component/using
-                  (snmp-v2c-trap-processor proc-name host port)
+                  (make-snmp-v2c-trap-processor proc-name host port)
                   [:responder]))
          (reset! state))
     (log/debug "system state created")))

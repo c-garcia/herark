@@ -1,7 +1,7 @@
 (ns herark.adapters.tools
   "Tools to help implementing or testing adapters when sending actual PDU over the wire
   is required. The need of these functions to be close to the lowest layer, makes them
-  to to use the abstractions provided in the `herark.smi` namespaces.
+  not to use the abstractions provided in the `herark.smi` namespaces.
   The functions here are built using the SNMP4J stack."
   (:require [clj-time.core :as t]
             [clj-time.coerce :as tc]

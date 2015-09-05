@@ -31,7 +31,7 @@
     (fn [p] (-> (component/system-map
                   :responder f
                   :processor (component/using
-                               (snmp-v2c-trap-processor
+                               (make-snmp-v2c-trap-processor
                                  (str "Proc-at-" p)
                                  "localhost"
                                  p

@@ -56,7 +56,7 @@
   (and
     (integer? x)
     (>= x 0)
-    (<= x TWO_32_MINUS_1)))
+    (<= x TWO-32-MINUS-1)))
 
 (s/defschema Counter
   "Schema for SMI Counter"
@@ -68,7 +68,7 @@
   (and
     (integer? x)
     (>= x 0)
-    (<= x TWO_32_MINUS_1)))
+    (<= x TWO-32-MINUS-1)))
 
 (s/defschema Gauge
   "Schema for SMI Gauge"
@@ -110,7 +110,7 @@
   [x]
   (and
     (string? x)
-    (re-matches IP_RE x)))
+    (re-matches IP-RE x)))
 
 (s/defschema IPAddress
   "Schema for SMI IPAdress."
@@ -131,7 +131,7 @@
   "Schema for SMI Variable Bindings."
   (s/pair OID "oid" SMIv1Value "variable"))
 
-;FIXME determine if we need NetWorkAddress
+;FIXME determine if we need NetworkAddress
 (s/defrecord V1TrapPDU [enterprise :- OID
                         source-address :- IPAddress
                         generic-trap-type :- Int
@@ -179,24 +179,24 @@
 
 (def
   ^{:const true :doc "Integer value for the generic trap AUTHENTICATION FAILURE"}
-  AUTHENTICATION_FAILURE_TRAP 4)
+  AUTHENTICATION-FAILURE-TRAP-IDX 4)
 (def
   ^{:const true :doc "Integer value for the generic trap COLD START"}
-  COLD_START_TRAP 0)
+  COLD-START-TRAP-IDX 0)
 (def
   ^{:const true :doc "Integer value for the flag for traps that are enterprise specific"}
-  ENTERPRISE_SPECIFIC_TRAP 6)
+  ENTERPRISE-SPECIFIC-TRAP-IDX 6)
 (def
   ^{:const true :doc "Integer value for the generic trap LINK DOWN"}
-  LINK_DOWN_TRAP 2)
+  LINK-DOWN-TRAP-IDX 2)
 (def
   ^{:const true :doc "Integer value for the generic trap LINK UP"}
-  LINK_UP_TRAP 3)
+  LINK-UP-TRAP-IDX 3)
 (def
   ^{:const true :doc "Integer value for the generic trap WARM START"}
-  WARM_START_TRAP 1)
+  WARM-START-TRAP-IDX 1)
 
 (def
   ^{:const true :doc "OID prefix for generic traps."}
-  GENERIC_TRAP_OID_PREFIX
+  GENERIC-TRAP-OID-PREFIX
   [1 3 6 1 6 3 1 1 5])

@@ -7,28 +7,28 @@
 
 (def
   ^{:const true :doc "2**31 - 1"}
-  TWO_31_MINUS_1 2147483647)
+  TWO-31-MINUS-1 2147483647)
 (def
   ^{:const true :doc "-2**31"}
-  MINUS_TWO_31 -2147483648)
+  MINUS-TWO-31 -2147483648)
 (def
   ^{:const true :doc "2**32 - 1"}
-  TWO_32_MINUS_1 4294967295)
+  TWO-32-MINUS-1 4294967295)
 (def
   ^{:const true :doc "2**64 -1 "}
-  TWO_64_MINUS_1 18446744073709551615)
+  TWO-64-MINUS-1 18446744073709551615)
 (def
   ^{:const true :doc "-2**7"}
-  MINUS_TWO_7 -128)
+  MINUS-TWO-7 -128)
 (def
   ^{:const true :doc "2**8 - 1"}
-  TWO_8_MINUS_1 255)
+  TWO-8-MINUS-1 255)
 (def
   ^{:const true :doc "2**16 - 1"}
-  TWO_16_MINUS_1 65535)
+  TWO-16-MINUS-1 65535)
 (def
   ^{:const true :doc "Regular Expression that matches an IPv4 address."}
-  IP_RE
+  IP-RE
   (re-pattern
     "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"))
 
@@ -54,8 +54,8 @@
   [x]
   (and
     (integer? x)
-    (>= x MINUS_TWO_7)
-    (<= x TWO_8_MINUS_1)))
+    (>= x MINUS-TWO-7)
+    (<= x TWO-8-MINUS-1)))
 
 (defn is_port?
   "Is `x` a valid TCP/UDP port?"
