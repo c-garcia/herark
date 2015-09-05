@@ -1,4 +1,4 @@
-(defproject eu.obliquo/herark "0.1.12-SNAPSHOT"
+(defproject eu.obliquo/herark "0.1.13-SNAPSHOT"
   :description "An SNMP Trap forwarding and management tool"
   :url "https://github.com/c-garcia/herark"
   :license {:name "Eclipse Public License"

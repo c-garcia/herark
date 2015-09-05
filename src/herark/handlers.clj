@@ -17,7 +17,7 @@
   end the processing chain."
   [level message]
   (s/fn
-    [e :- TrapEvent]
+    [e :- hk/TrapEvent]
     (log/log level message)
     (log/log level e)))
 
@@ -33,7 +33,7 @@
                                                StandardOpenOption/CREATE])))]
     (let [file (open-file file-path)]
       (s/fn
-        [e :- TrapEvent]
+        [e :- hk/TrapEvent]
         (binding [*out* file]
           (println (str e))
           (flush))))))
