@@ -9,8 +9,7 @@
             [schema.core :as s]
             [taoensso.timbre :as log])
   (:import (java.nio.charset Charset)
-           (java.nio.file Files FileSystems OpenOption StandardOpenOption)
-           (herark.core TrapEvent)))
+           (java.nio.file Files FileSystems OpenOption StandardOpenOption)))
 
 (defn log-trap!
   "Generates a handler function that logs traps with the specified log `level`. It prepends `message`.
