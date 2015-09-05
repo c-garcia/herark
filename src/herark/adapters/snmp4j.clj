@@ -202,7 +202,7 @@
   []
   (+ 2 (.. (Runtime/getRuntime) availableProcessors)))
 
-
+;; TODO Turn it into a single function able to support any version events
 (defn make-snmp-v2c-trap-processor
   "Creates a SNMP V2C UPD trap processor with name `proc-name`,
   listening on `host`:`port`.

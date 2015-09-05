@@ -198,6 +198,7 @@
   "Schema for SMIv2 Variable Bindings."
   (s/pair OID "oid" SMIv2Value "variable"))
 
+;; TODO Turn records into schemas
 (s/defrecord V2cTrapPDU [request-id :- Int32
                          error-status :- Int32
                          error-index :- Int32

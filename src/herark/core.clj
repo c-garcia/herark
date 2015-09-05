@@ -15,6 +15,7 @@
   (:require [schema.core :as s]
             [herark.smi.misc :refer :all]))
 
+;; Turn records into schemas
 (s/defrecord TrapEvent [timestamp :- long
                         message :- (s/pred #(contains? % :version))])
 

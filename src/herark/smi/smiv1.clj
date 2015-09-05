@@ -132,6 +132,7 @@
   "Schema for SMI Variable Bindings."
   (s/pair OID "oid" SMIv1Value "variable"))
 
+;; Turn records into schemas
 (s/defrecord V1TrapPDU [enterprise :- OID
                         source-address :- IPAddress
                         generic-trap-type :- Int
